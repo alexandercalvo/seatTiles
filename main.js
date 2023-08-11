@@ -1,200 +1,188 @@
 import './style.css';
-import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
-import {Draw, Modify, Snap, DragPan} from 'ol/interaction.js';
-import {GeometryCollection, Point, Polygon} from 'ol/geom.js';
-import {Map, View} from 'ol';
-import {OSM, TileDebug,  Vector as VectorSource, ImageStatic }from 'ol/source.js';
-import {Tile as TileLayer, Vector as VectorLayer, Layer} from 'ol/layer.js';
-import {circular} from 'ol/geom/Polygon.js';
-import {getDistance} from 'ol/sphere.js';
-import {transform} from 'ol/proj.js';
-import Circle from 'ol/geom/Circle.js';
+import Map from 'ol/Map.js';
+import OSM from 'ol/source/OSM.js';
+import TileLayer from 'ol/layer/Tile.js';
+import View from 'ol/View.js';
+import XYZ from 'ol/source/XYZ';
+import {createStringXY} from 'ol/coordinate';
 import Feature from 'ol/Feature.js';
-import GeoJSON from 'ol/format/GeoJSON.js';
-import {getCenter} from 'ol/extent.js';
-import TileGrid from 'ol/tilegrid/TileGrid.js';
-import XYZ from 'ol/source/XYZ.js';
-import TileWMS from 'ol/source/TileWMS.js';
+import Polygon from 'ol/geom/Polygon.js';
+import Point from 'ol/geom/Point.js';
+import VectorLayer from 'ol/layer/Vector'
+import {composeCssTransform} from 'ol/transform';
+import Geometry from 'ol/geom/Geometry.js';
+import { get } from "ol/proj";
+import {
+addCoordinateTransforms,
+addProjection,
+transform,
 
-import {get as getProjection} from 'ol/proj.js';
-import {getWidth} from 'ol/extent.js';
+} from 'ol/proj.js';
 
-import ImageLayer from 'ol/layer/Image.js';
-import Projection from 'ol/proj/Projection.js';
-import Static from 'ol/source/ImageStatic';
+import {Circle, Fill, Stroke, Style} from 'ol/style.js';
+import CanvasVectorLayerRenderer from 'ol/renderer/canvas/VectorLayer.js';
+import VectorSource from 'ol/source/Vector';
+const tileSize = 512; // Tamaño de tus imágenes de mosaico
+const containerWidth = 918; // Ancho del contenedor en píxeles
+const containerHeight = 665; // Alto del contenedor en píxele
 
 
-/*
-const projExtent = getProjection('EPSG:3857').getExtent();
-const startResolution = getWidth(projExtent) / 256;
-const resolutions = new Array(22);
-for (let i = 0, ii = resolutions.length; i < ii; ++i) {
-  resolutions[i] = startResolution / Math.pow(2, i);
+const resolutions = [];
+for (let i = 0; i <= 3; i++) {
+  const resolution = tileSize / Math.pow(2, i);
+  resolutions.push(resolution);
 }
-const tileGrid = new TileGrid({
-  extent: [-13884991, 2870341, -7455066, 6338219],
-  resolutions: resolutions,
-  tileSize: [512, 256],
-});
 
-const layers = [
-  new TileLayer({
-    source: new OSM(),
-  }),
-  new TileLayer({
-    source: new TileWMS({
-      url: '/escenario/0/0/0.png',
-      params: {'LAYERS': 'topp:states', 'TILED': true},
-      serverType: 'geoserver',
-      tileGrid: tileGrid,
-    }),
-  }),
-];*/
-/*
-https://openlayers.org/en/latest/examples/offscreen-canvas.html
-tener en cuenta al momento de crear mosaicos podria ser util
+/*funcin para crear las capas o mosaicos que crean el mapa 
+  comenzando con el zoom, luego pasa coordenada en x luego coordenada en y 
 */
-
-
-
-
-/*
-const image = new CircleStyle({
-  radius: 50,
-  fill:new Fill({color:'red'}),
-  stroke: new Stroke({color: '#000', width: 4}),
-});
-
-const styles = {
-  'Point': new Style({
-    image: image,
+const layers = new TileLayer({
+  source:new XYZ({
+  url:'./escenarios/{z}/{x}/{y}.png',
+  wrapX: false,
+  minResolution:43654.70227187199,
+  maxZoom:0,
   }),
+  })
 
-  'Polygon': new Style({
-    stroke: new Stroke({
-      color: 'blue',
-      lineDash: [4],
-      width: 3,
+  const layers1= new TileLayer({
+    source:new XYZ({
+    url:'./escenarios/{z}/{x}/{y}.png',
+    wrapX: false,
+    tileSize: 512,
     }),
-    fill: new Fill({
-      color: 'rgba(0, 0, 255, 0.1)',
-    }),
-  }),
-  
-}
+    })
 
-const styleFunction = function (feature) {
-  return styles[feature.getGeometry().getType()];
-};
-
-const geojsonObject = {
-  'type': 'FeatureCollection',
-
-  'features': [
-    {
-      'type': 'Feature',
-      'geometry': {
-        'type': 'Point',
-        'coordinates': [50, 0],
-      },
-    },
-
-
+const layerss = [layers1]
  
 
+
+  let miprojection = get("EPSG:3857");
+
+
+//funcion para crear la vista del mapa
+const view = new View({
+  center: [0, 0],
+  zoom: 0,
+  maxZoom:2,
+  minZoom:0,
+  projection: miprojection,
+
+  extent: [
+    -20037508.342789244, -20037508.342789244, 20037508.342789244,
+    20037508.342789244,
   ],
-};
-
-const vectorSource = new VectorSource({
-  features: new GeoJSON().readFeatures(geojsonObject),
+  
 });
 
-vectorSource.addFeature(new Feature(new Circle([5e6, 7e6], 1e6)));
-
-const vectorLayer = new VectorLayer({
-  source: vectorSource,
-  style: styleFunction,
-});
-*/
-/*const extent = [0, 0, 1024, 968];
-const projection = new Projection({
-  code: 'xkcd-image',
-  units: 'pixels',
-  extent: extent,
-});*/
-
-const miview = new View({
-  //projection: projection,
-  // center: getCenter(extent),
-
-
-  center: [300, 0],
-  //center: transform([-112.18688965, 36.057944835], 'EPSG:4326', 'EPSG:3857'),
-   zoom: 0,
-   maxZoom:2,
-   units: 'pixels'
-    
- })
-const attributions =
-  'de mi autoria';
 const map = new Map({
   target: 'map',
-  /*layers: [
-    /*new TileLayer({
-      source: new OSM()
-    }),
-   vectorLayer,*/
-   /*new ImageStatic({
-    url:'/escenario/0/0/0.png',
-    imageExtent: [0, 0, 300, 300], // Extensión geográfica de la imagen
-   })*/
-  /* new ImageLayer({
-    source:new Static(
-      {
-        attributions: '© <a href="https://xkcd.com/license.html">xkcd</a>',
-        url: './escenario/0/0/0.png',
-        projection: projection,
-        imageExtent: extent,
-      }
-    ),
-   })*/
-   
- // ],
-  //layers:layers,
-  layers:[
-    new TileLayer({
-      source: new XYZ({
-        attributions: attributions,
-        url:'./escenarios/{z}/{x}/{y}.png',
-        tilePixelRatio: 1,
-       
-      }),
-    }),
-  ],
-
-  view: miview,
-});
+  layers: layerss,
+  view: view,
+  
+  });
 
 
+
+
+//con esta metodo de una istancia del mapa se captura el evento click del mosaico o de el lienzo de el mapa
 map.on('click', (event)=>{
+  console.log('click en el lienzo del mapa', view.getZoom());
+  console.log('el centro del lienzo es', view.getCenter());
+  console.log('la resolucion es', view.getResolution());
+  console.log('la proyecion es ', view.getProjection());
   const coordinate = event.coordinate;
-  console.log('has hecho clic en las coordenada',coordinate);
-  console.log("el zooom antes ",miview.getZoom());
-  miview.setZoom(0);
-  console.log("la resolucion es",miview.getResolution());
-} );
+  console.log('la Longitud es', coordinate )
+  
+  //Convertir coordenadas geograficas a coordenadas cartesianas
+  const cartesianCoordinates = transform(coordinate, view.getProjection(), 'EPSG:4326');
+  console.log('Las coordenadas cartesianas son', cartesianCoordinates);
 
 
-//creando marcadores
-let marker = new Feature({
-  geometry: new Circle([0, 0], 12),
+  //Convertir coordenadas cartesianas a coordenadas de píxeles
+  const pixelCoordinates = transform(cartesianCoordinates, view.getProjection(), 'EPSG:3857');
+  console.log('Las coordenadas de píxeles son', pixelCoordinates);
+  
+  });
 
-});
+ /*map.getView().on('change:resolution', ()=>{
+    const currentZoom = map.getView().getZoom();
+   
+    layerss.forEach(layer => layer.setVisible(false));
 
+    if (currentZoom >= 0 && currentZoom < 1) {
+      console.log("mayor o igual a cero y menor que 1")
+      layerss[0].setVisible(true);
+    } else if (currentZoom >= 1 && currentZoom < 2) {
+    console.log("mayor o igual a c1 y menor que 2")
+    console.log(layerss[1])
+    layerss[1].setVisible(true);
+    } else if (currentZoom >= 2) {
+      layerss[2].setVisible(true);
+    }
 
-
-map.getInteractions().forEach(function (interaction) {
+  })*/
  
+  const latitude =  4511952.216451015;  // Cambiar a la latitud deseada
+const longitude = -4514936.424614135; // Cambiar a la longitud deseada
+
+// Crear una característica con la coordenada geográfica
+const markerFeature = new Feature({
+  geometry:  new  Point([longitude, latitude]),
 });
+// Estilo del marcador (círculo SVG)
+const markerStyle = new Style({
+  image: new Circle({
+    radius: 5, // Cambiar el tamaño del círculo según tus necesidades
+    fill: new Fill({ color: 'red' }), // Cambiar el color de relleno
+    stroke: new Stroke({ color: 'black', width: 2 }), // Cambiar el color del borde
+  }),
+});
+
+// Aplicar el estilo al marcador
+markerFeature.setStyle(markerStyle);
+
+// Crear una capa vectorial para el marcador
+const markerLayer = new VectorLayer({
+  source: new VectorSource({
+    features: [markerFeature],
+  }),
+});
+
+// Agregar la capa vectorial al mapa
+map.addLayer(markerLayer);
+
+function convertCoordinatesToOpenLayers(coordinates) {
+  var lon = coordinates[0];
+  var lat = coordinates[1];
+  var point = new Point(lon, lat);
+  return point;
+}
+
+
+ let  coordinates = [2045, 1657];
+
+
+var point = convertCoordinatesToOpenLayers(coordinates);
+console.log('EL PUNTO', point )
+
+
+const svgMarkup = `
+  <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="15" cy="15" r="10" fill="blue" />
+  </svg>`;
+const svgIcon = new Icon({
+  src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup),
+  anchor: [0.5, 1],
+});
+
+// Crear una característica con el elemento SVG como geometría
+const feature = new Feature({
+  geometry: new Point([0, 0]),
+});
+feature.setStyle(new Style({ image: svgIcon }));
+
+// Agregar la característica a la capa de vectores
+
 
 
